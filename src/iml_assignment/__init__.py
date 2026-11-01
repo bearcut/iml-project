@@ -1,2 +1,88 @@
-def main() -> None:
-    print("Hello from iml-assignment!")
+"""
+IML Assignment: Wearable Sensor Human Activity Recognition
+"""
+
+from iml_assignment.config import (
+    TRAIN_PATH,
+    TEST_PATH,
+    TRAIN_AUGMENTED_PATH,
+    FULL_PATH,
+    FIGURES_DIR,
+    METRICS_DIR,
+    SUBMISSIONS_DIR,
+    SENSOR_CHANNELS,
+    BODY_LOCATIONS,
+    SENSOR_MODALITIES,
+    ACTIVITY_CLASSES,
+    ACTIVITY_CATEGORIES,
+    SAMPLING_RATE_HZ,
+    WINDOW_SIZE,
+    NUM_CHANNELS,
+    TOTAL_SIGNAL_FEATURES,
+    SENTINEL_VALUE,
+    LABEL2ID,
+    ID2LABEL,
+)
+
+from iml_assignment.data import (
+    load_data,
+    get_sensor_columns,
+    verify_column_ordering,
+    get_dataset_summary,
+    get_class_distribution,
+    analyze_missing_and_sentinels,
+    extract_sample_waveform,
+    clean_sample_waveform,
+    compute_channel_statistics,
+)
+
+from iml_assignment.visualization import (
+    plot_class_distribution,
+    plot_missingness_by_channel,
+    plot_sample_waveforms,
+    plot_raw_vs_cleaned,
+    plot_activity_comparison,
+    plot_sensor_correlations,
+    plot_frequency_spectrum,
+)
+
+__all__ = [
+    # Config
+    "TRAIN_PATH",
+    "TEST_PATH",
+    "TRAIN_AUGMENTED_PATH",
+    "FULL_PATH",
+    "FIGURES_DIR",
+    "METRICS_DIR",
+    "SUBMISSIONS_DIR",
+    "SENSOR_CHANNELS",
+    "BODY_LOCATIONS",
+    "SENSOR_MODALITIES",
+    "ACTIVITY_CLASSES",
+    "ACTIVITY_CATEGORIES",
+    "SAMPLING_RATE_HZ",
+    "WINDOW_SIZE",
+    "NUM_CHANNELS",
+    "TOTAL_SIGNAL_FEATURES",
+    "SENTINEL_VALUE",
+    "LABEL2ID",
+    "ID2LABEL",
+    # Data
+    "load_data",
+    "get_sensor_columns",
+    "verify_column_ordering",
+    "get_dataset_summary",
+    "get_class_distribution",
+    "analyze_missing_and_sentinels",
+    "extract_sample_waveform",
+    "clean_sample_waveform",
+    "compute_channel_statistics",
+    # Visualization
+    "plot_class_distribution",
+    "plot_missingness_by_channel",
+    "plot_sample_waveforms",
+    "plot_raw_vs_cleaned",
+    "plot_activity_comparison",
+    "plot_sensor_correlations",
+    "plot_frequency_spectrum",
+]
