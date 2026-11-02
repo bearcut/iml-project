@@ -1,4 +1,7 @@
-# Library for visualization of data in the notebooks 
+"""
+Visualization library for exploratory data analysis, signal inspection,
+corruption analysis, preprocessing comparisons, and publication-ready figures.
+"""
 
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -38,7 +41,17 @@ plt.rcParams.update({
 
 
 def _maybe_save(fig: plt.Figure, save_name: Optional[str]) -> None:
-    """Save the figure to reports/figures/ if save_name is provided."""
+    """
+    Save the matplotlib figure to `reports/figures/` if save_name is provided.
+
+    Parameters
+    ----------
+    fig : plt.Figure
+        The matplotlib figure object to save.
+    save_name : Optional[str]
+        Desired output filename (e.g. 'fig1_class_distribution.png').
+        If no extension is provided, defaults to '.png'.
+    """
     if save_name:
         out_path = FIGURES_DIR / (save_name if save_name.endswith((".png", ".pdf", ".svg")) else f"{save_name}.png")
         fig.savefig(out_path, dpi=300, bbox_inches="tight")
@@ -54,7 +67,34 @@ def plot_class_distribution(
     figsize: Tuple[int, int] = (10, 5)
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
-    Plot horizontal bar chart of the 12 activity classes with sample counts and percentages.
+    Plot a horizontal bar chart of the 12 activity classes with sample counts and percentages.
+
+    Parameters
+    ----------
+    data : Union[pd.DataFrame, pd.Series]
+        Dataset DataFrame containing a 'target' column, or a pre-computed
+        distribution DataFrame with 'Activity' and 'Count' columns.
+    title : str, default="Activity Class Distribution"
+        Chart title.
+    save_name : Optional[str], default=None
+        Filename to save the figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(10, 5)
+        Dimensions of the figure in inches.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes]
+        Matplotlib figure and axes objects.
+
+    Raises
+    ------
+    ValueError
+        If input is not a DataFrame with 'target' or 'Activity' column.
+
+    Examples
+    --------
+    >>> fig, ax = plot_class_distribution(train_df, save_name="fig1_class_dist.png")
+    >>> plt.show()
     """
     if isinstance(data, pd.DataFrame) and "target" in data.columns:
         dist_df = get_class_distribution(data)
@@ -102,7 +142,29 @@ def plot_missingness_by_channel(
     figsize: Tuple[int, int] = (12, 6)
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
-    Plot stacked bar chart showing breakdown of NaNs vs 9999 Sentinels per channel.
+    Plot a stacked bar chart displaying the breakdown of NaNs vs 9999 Sentinels per channel.
+
+    Parameters
+    ----------
+    missing_summary : pd.DataFrame
+        Channel summary DataFrame produced by `analyze_missing_and_sentinels()['channel_summary']`.
+    title : str, default="Corruption Rate per Sensor Channel (NaN + 9999 Sentinel)"
+        Chart title.
+    save_name : Optional[str], default=None
+        Filename to save the figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(12, 6)
+        Dimensions of the figure in inches.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes]
+        Matplotlib figure and axes objects.
+
+    Examples
+    --------
+    >>> missing_info = analyze_missing_and_sentinels(train_df)
+    >>> fig, ax = plot_missingness_by_channel(missing_info["channel_summary"])
+    >>> plt.show()
     """
     df = missing_summary.copy()
     fig, ax = plt.subplots(figsize=figsize)
@@ -110,9 +172,6 @@ def plot_missingness_by_channel(
     x = np.arange(len(df))
     width = 0.65
 
-    # Compute percentage rates
-    total_samples = df["NaN Count"] + df["Sentinel (9999) Count"]
-    # We display counts or rates
     ax.bar(x, df["NaN Count"], width, label="NaN (Missing)", color="#4575b4", alpha=0.85)
     ax.bar(x, df["Sentinel (9999) Count"], width, bottom=df["NaN Count"], label="Sentinel (9999.0)", color="#d73027", alpha=0.85)
 
@@ -139,13 +198,36 @@ def plot_sample_waveforms(
     figsize: Tuple[int, int] = (12, 8)
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
-    Plot waveforms grouped into 3 subplots: Chest, Ankle, and Arm (or a specific body location).
-    """
-    locations = [body_location] if body_location else ["Chest", "Ankle", "Arm"]
-    n_plots = len(locations)
+    Plot time-series signals grouped by anatomical body placement (Chest, Ankle, Arm).
 
-    fig, axes = plt.subplots(n_plots, 1, figsize=figsize, sharex=True)
-    if n_plots == 1:
+    Parameters
+    ----------
+    waveform_df : pd.DataFrame
+        (250, 23) waveform DataFrame produced by `extract_sample_waveform`.
+    title : Optional[str], default=None
+        Overall figure super-title.
+    body_location : Optional[str], default=None
+        Specific body location to plot ('Chest', 'Ankle', or 'Arm').
+        If None, creates 3 stacked subplots for all locations.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(12, 8)
+        Dimensions of the figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, np.ndarray]
+        Figure and array of axes subplots.
+
+    Examples
+    --------
+    >>> raw_wave, label = extract_sample_waveform(train_df, 0)
+    >>> fig, axes = plot_sample_waveforms(raw_wave, title=f"Sample: {label}")
+    >>> plt.show()
+    """
+    locations = [body_location] if body_location else list(BODY_LOCATIONS.keys())
+    fig, axes = plt.subplots(len(locations), 1, figsize=figsize, sharex=True)
+    if len(locations) == 1:
         axes = np.array([axes])
 
     palette = sns.color_palette("tab10")
@@ -185,12 +267,31 @@ def plot_raw_vs_cleaned(
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
     Compare raw corrupted signal against linearly interpolated cleaned signal.
+
+    Parameters
+    ----------
+    raw_waveform : pd.DataFrame
+        Raw (250, 23) waveform DataFrame containing NaNs and 9999.0 sentinels.
+    cleaned_waveform : pd.DataFrame
+        Cleaned (250, 23) waveform DataFrame.
+    channel : str, default="chest_acc_x"
+        Sensor channel to display.
+    title : Optional[str], default=None
+        Plot title.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(12, 5)
+        Dimensions of figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes]
+        Figure and axes objects.
     """
     fig, ax = plt.subplots(figsize=figsize)
     unit = get_channel_unit(channel)
     time_idx = raw_waveform.index
 
-    # Raw signal (sentinels shown as red dots if present)
     raw_s = raw_waveform[channel].copy()
     sentinel_idx = raw_s[raw_s == 9999.0].index
 
@@ -230,6 +331,26 @@ def plot_activity_comparison(
 ) -> Tuple[plt.Figure, np.ndarray]:
     """
     Compare waveforms of two activities for a given sensor channel side-by-side.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataset DataFrame containing 'target' column and sensor features.
+    activity_a : str, default="walking"
+        First activity class name.
+    activity_b : str, default="running"
+        Second activity class name.
+    channel : str, default="ankle_acc_y"
+        Sensor channel to compare.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(12, 5)
+        Dimensions of figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, np.ndarray]
+        Figure and array of 2 axes subplots.
     """
     row_a = df[df["target"] == activity_a].index[0]
     row_b = df[df["target"] == activity_b].index[0]
@@ -267,7 +388,23 @@ def plot_sensor_correlations(
     figsize: Tuple[int, int] = (10, 8)
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
-    Plot heatmap of correlation coefficients across all 23 sensor channels.
+    Plot a heatmap of Pearson correlation coefficients across all 23 sensor channels.
+
+    Parameters
+    ----------
+    waveform_df : pd.DataFrame
+        (250, 23) waveform DataFrame.
+    title : str, default="Cross-Sensor Correlation Matrix"
+        Plot title.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(10, 8)
+        Dimensions of figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes]
+        Figure and axes objects.
     """
     cleaned = clean_sample_waveform(waveform_df)
     corr = cleaned.corr()
@@ -302,7 +439,27 @@ def plot_frequency_spectrum(
     figsize: Tuple[int, int] = (9, 4)
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
-    Plot Power Spectral Density (PSD) using Welch's method for frequency analysis.
+    Plot Power Spectral Density (PSD) using Welch's method for frequency domain analysis.
+
+    Parameters
+    ----------
+    waveform_df : pd.DataFrame
+        (250, 23) waveform DataFrame.
+    channel : str, default="ankle_acc_y"
+        Sensor channel to analyze.
+    fs : int, default=50
+        Sampling frequency in Hertz.
+    title : Optional[str], default=None
+        Plot title.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(9, 4)
+        Dimensions of figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes]
+        Figure and axes objects.
     """
     cleaned = clean_sample_waveform(waveform_df)
     sig = cleaned[channel].values
@@ -340,6 +497,28 @@ def plot_imputation_comparison(
       Linear interpolation (blue line), and Cubic Spline (orange dashed line).
     - Bottom panel: Zoomed-in window focused on the largest missing/corrupted block,
       clearly demonstrating how linear makes straight segments vs cubic spline curves smoothly.
+
+    Parameters
+    ----------
+    raw_waveform : pd.DataFrame
+        Raw (250, 23) waveform with corrupted values and sentinels.
+    linear_waveform : pd.DataFrame
+        (250, 23) waveform cleaned via 1D linear interpolation.
+    spline_waveform : Optional[pd.DataFrame], default=None
+        (250, 23) waveform cleaned via natural cubic spline interpolation.
+    channel : str, default="chest_acc_x"
+        Sensor channel to compare.
+    title : Optional[str], default=None
+        Custom title for the top panel.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(12, 7)
+        Dimensions of figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, np.ndarray]
+        Figure and array of 2 axes subplots.
     """
     fig, axes = plt.subplots(2, 1, figsize=figsize, sharex=False)
     time_idx = raw_waveform.index.to_numpy()
@@ -431,6 +610,28 @@ def plot_scaling_comparison(
     - Panel 1: Original Clean Signal (physical units: m/s^2, deg/s, uT, mV)
     - Panel 2: Robust Scaler (Centered at Median=0, Scaled by IQR=1)
     - Panel 3: Standard Scaler (Centered at Mean=0, Scaled by Std=1)
+
+    Parameters
+    ----------
+    unscaled_waveform : pd.DataFrame
+        Cleaned, unscaled (250, 23) waveform.
+    robust_waveform : pd.DataFrame
+        Waveform transformed by `ChannelScaler(method='robust')`.
+    standard_waveform : pd.DataFrame
+        Waveform transformed by `ChannelScaler(method='standard')`.
+    channel : str, default="chest_acc_x"
+        Sensor channel to compare.
+    title : Optional[str], default=None
+        Overall figure title.
+    save_name : Optional[str], default=None
+        Filename to save figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(12, 8)
+        Dimensions of figure.
+
+    Returns
+    -------
+    Tuple[plt.Figure, np.ndarray]
+        Figure and array of 3 axes subplots.
     """
     fig, axes = plt.subplots(3, 1, figsize=figsize, sharex=True)
     time_idx = unscaled_waveform.index.to_numpy()
@@ -501,14 +702,15 @@ def plot_signals(
     Features:
     ---------
     1. Flexible Inputs:
-       - Single waveform (250, 23)
+       - Single waveform DataFrame (250, 23)
        - Dataset DataFrame (e.g. train_df) with sample_idx=0
        - Dictionary of waveforms to overlay: {'Raw': raw_wave, 'Clean': clean_wave, 'Spline': spl_wave}
        - List of waveforms: [clean_wave, robust_wave]
+       - 2D or 3D NumPy arrays (250, 23)
     2. Flexible Channels:
        - Single channel name: 'chest_acc_x'
        - List of channels: ['chest_acc_x', 'ankle_acc_y', 'arm_mag_z']
-       - Body location alias: 'chest', 'ankle', 'arm' (plots all channels for that sensor)
+       - Body location alias: 'chest', 'ankle', 'arm' (plots all channels for that body part)
        - 'all': plots all 23 sensor channels
     3. Time Zoom:
        - time_range=(start_sec, end_sec) to zoom into specific time intervals.
@@ -517,39 +719,43 @@ def plot_signals(
 
     Parameters
     ----------
-    signals : DataFrame, ndarray, Dict, or List
+    signals : Union[pd.DataFrame, np.ndarray, Dict[str, Union[pd.DataFrame, np.ndarray]], List[Union[pd.DataFrame, np.ndarray]]]
         The signal(s) to plot.
-    channels : str or List[str]
+    channels : Union[str, List[str]], default="chest_acc_x"
         Sensor channel(s) or body location ('chest', 'ankle', 'arm', 'all').
-    sample_idx : Optional[int]
+    sample_idx : Optional[int], default=None
         If passing a dataset DataFrame with 5,750 columns, row index to extract.
-    time_range : Optional[Tuple[float, float]]
+    time_range : Optional[Tuple[float, float]], default=None
         (t_min, t_max) in seconds to zoom into.
-    title : Optional[str]
-        Figure title.
-    highlight_corrupt : bool
+    title : Optional[str], default=None
+        Figure super-title.
+    highlight_corrupt : bool, default=True
         Whether to highlight 9999.0 sentinels with red dots.
-    sentinel : float
-        Sentinel value representing corrupted readings (default 9999.0).
-    figsize : Optional[Tuple[int, int]]
-        Figure dimensions.
-    save_name : Optional[str]
+    sentinel : float, default=9999.0
+        Sentinel value representing corrupted readings.
+    figsize : Optional[Tuple[int, int]], default=None
+        Figure dimensions. Automatically sized if None.
+    save_name : Optional[str], default=None
         Optional filename to auto-save into reports/figures/.
-    palette : Optional[List[str]]
+    palette : Optional[List[str]], default=None
         Custom colors for overlaid curves.
-    alpha : float
+    alpha : float, default=0.85
         Line transparency.
-    lw : float
+    lw : float, default=1.8
         Line width.
 
     Returns
     -------
     Tuple[plt.Figure, Union[plt.Axes, np.ndarray]]
-        Figure and axes objects.
+        Figure and axes (single Axes if 1 channel, ndarray of Axes if multiple channels).
+
+    Examples
+    --------
+    >>> fig, ax = plot_signals(clean_wave, channels="chest_acc_x")
+    >>> fig, axes = plot_signals({"Raw": raw_wave, "Clean": clean_wave}, channels="chest")
     """
     def _coerce_to_waveform(item: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
         if isinstance(item, pd.DataFrame):
-            # If it is a full dataset row/DataFrame
             if item.shape[1] > NUM_CHANNELS and "t000_chest_acc_x" in item.columns:
                 row_idx = sample_idx if sample_idx is not None else 0
                 wave_df, _ = extract_sample_waveform(item, row_idx)

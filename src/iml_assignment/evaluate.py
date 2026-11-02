@@ -35,15 +35,41 @@ def compute_classification_metrics(
     """
     Compute comprehensive classification metrics for multiclass predictions.
 
-    Returns:
+    Calculates:
+    - Overall Accuracy (primary Kaggle competition metric).
+    - Macro-Averaged F1 Score (unweighted mean across all 12 classes; vital for evaluating rare activities).
+    - Weighted F1 Score (weighted by class support).
+    - Balanced Accuracy (unweighted mean of recalls across all classes).
+    - Log Loss / Cross-Entropy (if predicted probability distribution `y_prob` is provided).
+    - Per-Class Breakdown: Precision, Recall, F1, and Support for every activity class.
+
+    Parameters
+    ----------
+    y_true : Union[pd.Series, np.ndarray, List]
+        Ground-truth activity labels.
+    y_pred : Union[pd.Series, np.ndarray, List]
+        Predicted activity labels.
+    y_prob : Optional[np.ndarray], default=None
+        Predicted probability array of shape (N, n_classes).
+    class_names : Optional[List[str]], default=None
+        List of target class names. Defaults to canonical `ACTIVITY_CLASSES`.
+
+    Returns
+    -------
+    Dict[str, Union[float, Dict]]
+        Dictionary containing:
+        - 'accuracy': float
+        - 'accuracy_pct': float (accuracy as percentage 0-100)
+        - 'macro_f1': float
+        - 'weighted_f1': float
+        - 'balanced_accuracy': float
+        - 'log_loss': float (if y_prob provided)
+        - 'per_class': Dict mapping each activity to its precision, recall, f1, support.
+
+    Examples
     --------
-    dict with:
-      - accuracy: Overall accuracy (Kaggle competition metric)
-      - macro_f1: Unweighted mean F1 across all 12 classes (critical for minority class 11)
-      - weighted_f1: Frequency-weighted mean F1
-      - balanced_accuracy: Mean recall across classes
-      - log_loss: Multiclass cross-entropy (if y_prob provided)
-      - per_class: Dictionary of precision, recall, F1, and support for each class
+    >>> metrics = compute_classification_metrics(y_val, y_pred)
+    >>> print(f"Val Accuracy: {metrics['accuracy_pct']}% | Macro F1: {metrics['macro_f1']}")
     """
     labels = class_names if class_names is not None else ACTIVITY_CLASSES
 
@@ -89,7 +115,27 @@ def get_classification_report_df(
     class_names: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
-    Generate a clean pandas DataFrame of precision, recall, f1-score, and support.
+    Generate a clean pandas DataFrame representing the classification report.
+
+    Parameters
+    ----------
+    y_true : Union[pd.Series, np.ndarray, List]
+        True activity class labels.
+    y_pred : Union[pd.Series, np.ndarray, List]
+        Predicted activity class labels.
+    class_names : Optional[List[str]], default=None
+        Ordered list of class labels. Defaults to canonical `ACTIVITY_CLASSES`.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns ['precision', 'recall', 'f1-score', 'support'],
+        indexed by activity class name plus overall accuracy and macro/weighted averages.
+
+    Examples
+    --------
+    >>> report_df = get_classification_report_df(y_val, y_pred)
+    >>> display(report_df)
     """
     labels = class_names if class_names is not None else ACTIVITY_CLASSES
     report_dict = classification_report(
@@ -110,7 +156,38 @@ def plot_confusion_matrix(
     cmap: str = "Blues",
 ) -> Tuple[plt.Figure, plt.Axes]:
     """
-    Plot an annotated heatmap confusion matrix with normalized percentages and sample counts.
+    Plot a publication-grade annotated heatmap confusion matrix for the 12 activity classes.
+
+    Each cell shows both the normalized recall percentage and the raw sample count.
+
+    Parameters
+    ----------
+    y_true : Union[pd.Series, np.ndarray, List]
+        Ground-truth labels.
+    y_pred : Union[pd.Series, np.ndarray, List]
+        Predicted labels.
+    class_names : Optional[List[str]], default=None
+        List of activity names. Defaults to canonical `ACTIVITY_CLASSES`.
+    normalize : bool, default=True
+        Whether to normalize confusion matrix rows by class support (True = recall rates).
+    title : Optional[str], default=None
+        Chart title. If None, displays default title showing overall accuracy.
+    save_name : Optional[str], default=None
+        Filename to save the figure inside reports/figures/.
+    figsize : Tuple[int, int], default=(10, 8)
+        Dimensions of figure.
+    cmap : str, default="Blues"
+        Matplotlib/Seaborn colormap.
+
+    Returns
+    -------
+    Tuple[plt.Figure, plt.Axes]
+        Matplotlib figure and axes objects.
+
+    Examples
+    --------
+    >>> fig, ax = plot_confusion_matrix(y_true, oof_preds, save_name="fig_cm.png")
+    >>> plt.show()
     """
     labels = class_names if class_names is not None else ACTIVITY_CLASSES
 
@@ -164,7 +241,25 @@ def plot_confusion_matrix(
 
 
 def save_metrics(metrics: Dict, filename: str) -> Path:
-    """Save metrics dictionary to reports/metrics/ as JSON."""
+    """
+    Save an evaluation metrics dictionary to `reports/metrics/` as formatted JSON.
+
+    Parameters
+    ----------
+    metrics : Dict
+        Metrics dictionary produced by `compute_classification_metrics`.
+    filename : str
+        Filename (e.g. 'rf_baseline_metrics.json').
+
+    Returns
+    -------
+    Path
+        Path to the saved JSON file.
+
+    Examples
+    --------
+    >>> path = save_metrics(metrics, "rf_baseline_metrics.json")
+    """
     fname = filename if filename.endswith(".json") else f"{filename}.json"
     out_path = METRICS_DIR / fname
     with open(out_path, "w", encoding="utf-8") as f:

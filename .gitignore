@@ -12,7 +12,7 @@ wheels/
 # Datasets
 prepare_datasets.py
 dataset/
-*.csv
+
 
 # Temporary benchmark experiments
 benchmark_sota/

@@ -1,7 +1,9 @@
 """
 Feature extraction pipeline for wearable sensor multivariate time series.
+
 Extracts statistical, spectral (FFT), and kinematic domain features from
-250-timestep windows across 23 sensor channels.
+250-timestep windows across 23 sensor channels, transforming noisy high-dimensional
+signals into structured tabular representations for gradient boosted trees and classical ML.
 """
 
 from typing import List, Optional, Tuple, Union
@@ -29,25 +31,46 @@ def extract_window_features(waveform_df: pd.DataFrame) -> pd.Series:
     """
     Extract a comprehensive feature vector from a single (250, 23) cleaned waveform.
 
-    Extracted features per channel:
-    - Statistical / Time-Domain:
-      - Mean, Standard Deviation, Variance, Min, Max, Range, Median, IQR
-      - Skewness, Kurtosis
-      - Root Mean Square (RMS)
-      - Zero-Crossing Rate (ZCR)
-    - Frequency / Spectral-Domain:
-      - Spectral Energy (sum of squared FFT magnitudes)
-      - Dominant Frequency (peak frequency in spectrum)
-      - Spectral Entropy
-    - Kinematic Vector Magnitudes (Resultants):
-      - Accelerometer magnitudes for Chest, Ankle, Arm: sqrt(x^2 + y^2 + z^2)
-      - Gyroscope magnitudes for Ankle, Arm: sqrt(x^2 + y^2 + z^2)
-      - Magnetometer magnitudes for Ankle, Arm: sqrt(x^2 + y^2 + z^2)
+    Computes 357 domain-specific features per 5-second window across three categories:
 
-    Returns:
-    --------
+    1. Time-Domain / Statistical Features (per channel):
+       - Central tendency & dispersion: Mean, Standard Deviation, Variance, Min, Max, Range, Median, IQR.
+       - Shape & Distribution: Skewness (asymmetry), Kurtosis (peakedness / heavy tails).
+       - Power & Dynamics: Root Mean Square (RMS), Zero-Crossing Rate (ZCR) around the channel mean.
+
+    2. Frequency-Domain / Spectral Features (per channel via Welch/FFT):
+       - Spectral Energy: Total power across discrete Fourier bins.
+       - Dominant Frequency: Frequency bin with maximum power (identifies cadence/step frequency).
+       - Spectral Entropy: Quantifies disorder / randomness of power distribution across frequency bins.
+
+    3. Kinematic 3D Vector Magnitudes (Resultants):
+       - Euclidean norm: sqrt(x² + y² + z²) for 3-axis sensors:
+         - Chest Accelerometer Magnitude
+         - Ankle Accelerometer Magnitude
+         - Ankle Gyroscope Magnitude
+         - Ankle Magnetometer Magnitude
+         - Arm Accelerometer Magnitude
+         - Arm Gyroscope Magnitude
+         - Arm Magnetometer Magnitude
+       - Summary statistics computed for each resultant vector: Mean, Std, Max, Min, IQR.
+
+    Parameters
+    ----------
+    waveform_df : pd.DataFrame
+        Cleaned (250, 23) DataFrame with time index in seconds and the 23 sensor channels as columns.
+
+    Returns
+    -------
     pd.Series
-        Named feature vector.
+        Named feature vector containing 357 numeric scalar features.
+
+    Examples
+    --------
+    >>> raw_wave, _ = extract_sample_waveform(train_df, 0)
+    >>> clean_wave = clean_sample_waveform(raw_wave, method="cubic_spline")
+    >>> feats = extract_window_features(clean_wave)
+    >>> print(len(feats))
+    357
     """
     feats = {}
     time_series = waveform_df.to_numpy(dtype=float)
@@ -134,27 +157,39 @@ def extract_features_dataset(
     """
     Extract the tabular feature matrix from a full dataset DataFrame (train or test).
 
-    Parameters:
-    -----------
+    Pipeline:
+    1. Independent sample imputation (zero leakage): Replaces sentinels and missing points
+       via `clean_dataset` using the selected method ('cubic_spline' or 'linear').
+    2. Optional channel scaling: Applies a fitted `ChannelScaler` (e.g. RobustScaler).
+    3. Row-by-row feature calculation: Computes all 357 time, spectral, and kinematic
+       features for each sample window.
+
+    Parameters
+    ----------
     df : pd.DataFrame
         Dataset containing 5,750 sensor columns, and optionally 'id' and 'target'.
-    clean : bool
-        If True, cleans missing values and sentinels via `clean_dataset`.
-    impute_method : str
+    clean : bool, default=True
+        If True, cleans missing values and sentinels before feature extraction.
+    impute_method : str, default="cubic_spline"
         'cubic_spline' or 'linear'.
-    scaler : Optional[ChannelScaler]
-        Fitted ChannelScaler to apply channel normalization.
-    sentinel : float
-        Noise sentinel value (default 9999.0).
-    verbose : bool
-        Whether to print progress.
+    scaler : Optional[ChannelScaler], default=None
+        Fitted ChannelScaler to apply channel normalization prior to feature computation.
+    sentinel : float, default=9999.0
+        Noise sentinel value.
+    verbose : bool, default=True
+        Whether to print extraction progress.
 
-    Returns:
+    Returns
+    -------
+    Tuple[pd.DataFrame, Optional[pd.Series]]
+        - X_features: DataFrame of extracted features (N rows, 357 columns), indexed by sample ID.
+        - y: Target label Series if 'target' column is present in df, else None.
+
+    Examples
     --------
-    X_features : pd.DataFrame
-        DataFrame of extracted features (N rows, ~350 engineered features).
-    y : Optional[pd.Series]
-        Target labels series if 'target' column is present in df, else None.
+    >>> X_tr, y_tr = extract_features_dataset(train_df, impute_method="cubic_spline")
+    >>> print(X_tr.shape)
+    (679, 357)
     """
     if verbose:
         print(f"Extracting features for {len(df)} samples...")

@@ -1,6 +1,11 @@
 """
 Training and Cross-Validation pipelines for Human Activity Recognition.
-Includes Stratified K-Fold CV, Out-Of-Fold (OOF) tracking, and Kaggle submission generators.
+
+Includes:
+- Stratified 5-Fold Cross Validation preserving minority class ratios.
+- Out-Of-Fold (OOF) prediction and probability tracking.
+- Test set fold-ensemble averaging.
+- Automated Kaggle submission generation and validation.
 """
 
 from pathlib import Path
@@ -35,43 +40,51 @@ def cross_validate_model(
 
     Features:
     ---------
-    1. Stratified Splits: Preserves identical 12-activity class proportions in every fold,
-       guaranteeing balanced exposure for the rare class 11 ('jump_front_back').
+    1. Stratified Splits: Preserves identical 12-activity class proportions across every fold,
+       guaranteeing balanced exposure for rare activities like class 11 ('jump_front_back').
     2. Out-Of-Fold (OOF) Tracking: Collects unbiased OOF predictions and probability distributions
-       for the full dataset, which can also be used as meta-features for ensembling.
-    3. Fold Averaging for Test: If test_X is provided, predictions from all 5 fold models
-       are averaged to maximize test generalization.
+       for the full training dataset, useful for threshold tuning and ensembling.
+    3. Fold Averaging for Test: If `test_X` is provided, predicted probability distributions
+       from all 5 fold models are averaged to maximize test generalization on Kaggle.
 
-    Parameters:
-    -----------
-    model : str or BaseEstimator
-        Model identifier ('random_forest', 'logistic_regression', 'dummy') or an estimator instance.
-    X : DataFrame or ndarray
-        Feature matrix (N, n_features).
-    y : Series, ndarray, or List
-        Target labels.
-    n_splits : int
-        Number of cross-validation folds (default 5).
-    random_state : int
-        Seed for stratified fold splitting.
-    test_X : Optional[DataFrame or ndarray]
-        Test set features to generate averaged fold predictions for Kaggle.
-    model_kwargs : Optional[dict]
-        Additional arguments passed to get_baseline_model if model is a string.
-    verbose : bool
-        Whether to print fold-by-fold results.
+    Parameters
+    ----------
+    model : Union[str, BaseEstimator]
+        Model identifier ('random_forest', 'rf', 'logistic_regression', 'lr', 'dummy')
+        or an existing scikit-learn estimator / pipeline instance.
+    X : Union[pd.DataFrame, np.ndarray]
+        Training feature matrix of shape (N, n_features).
+    y : Union[pd.Series, np.ndarray, List]
+        Target labels of length N.
+    n_splits : int, default=5
+        Number of cross-validation folds.
+    random_state : int, default=42
+        Seed for deterministic stratified splitting.
+    test_X : Optional[Union[pd.DataFrame, np.ndarray]], default=None
+        Test set feature matrix. If provided, generates fold-averaged predictions.
+    model_kwargs : Optional[Dict[str, Any]], default=None
+        Hyperparameter overrides passed to `get_baseline_model` if `model` is a string.
+    verbose : bool, default=True
+        Whether to print fold-by-fold validation progress to console.
 
-    Returns:
+    Returns
+    -------
+    Dict[str, Any]
+        Dictionary containing:
+        - 'model_name': str
+        - 'fold_summary': pd.DataFrame with per-fold metrics and Mean +/- Std rows.
+        - 'oof_preds': np.ndarray of predicted labels across all training samples.
+        - 'oof_probs': np.ndarray of predicted probability distributions (N, 12).
+        - 'test_preds': np.ndarray of final test predictions (if test_X provided).
+        - 'test_probs': np.ndarray of final averaged test probabilities (N_test, 12).
+        - 'overall_metrics': Dict of overall OOF accuracy, macro_f1, and per-class metrics.
+        - 'models': List of fitted estimators across all folds.
+
+    Examples
     --------
-    dict with:
-      - 'model_name': str
-      - 'fold_summary': pd.DataFrame with per-fold metrics and Mean +/- Std
-      - 'oof_preds': np.ndarray of predicted labels across all samples
-      - 'oof_probs': np.ndarray of predicted probabilities (N, 12)
-      - 'test_preds': np.ndarray of final test predictions (if test_X provided)
-      - 'test_probs': np.ndarray of final test probabilities
-      - 'overall_metrics': Dict of OOF accuracy, macro_f1, per-class metrics
-      - 'models': List of fitted estimators for each fold
+    >>> results = cross_validate_model("random_forest", X_train, y_train, test_X=X_test)
+    >>> display(results["fold_summary"])
+    >>> print("OOF Accuracy:", results["overall_metrics"]["accuracy_pct"])
     """
     model_kwargs = model_kwargs or {}
 
@@ -211,26 +224,59 @@ def cross_validate_model(
 
 def create_submission_file(
     test_df: pd.DataFrame,
-    predictions: Union[pd.Series, np.ndarray, List[str]],
+    predictions: Union[pd.Series, np.ndarray, List[Any], pd.DataFrame],
     save_name: str = "submission.csv",
+    class_order: Optional[Union[List[str], str]] = None,
     verbose: bool = True,
 ) -> Path:
     """
-    Generate and validate a Kaggle-compliant submission CSV file.
+    Generate, format, and validate a Kaggle-compliant submission CSV file.
 
-    Parameters:
-    -----------
+    Performs automated validation checks:
+    - Verifies 'id' column exists and test length matches exactly 403 rows.
+    - Converts integer class IDs or probability matrices to canonical string activity names.
+    - Confirms zero NaN/null values exist in predictions.
+    - Writes CSV formatted as 'id,target' to `reports/submissions/<save_name>`.
+
+    Parameters
+    ----------
     test_df : pd.DataFrame
-        Test dataset containing the 'id' column.
-    predictions : Series, ndarray, or list
-        Predicted activity labels for each test ID.
-    save_name : str
-        Filename saved inside reports/submissions/.
+        Test dataset DataFrame containing the 'id' column (403 rows).
+    predictions : Union[pd.Series, np.ndarray, List[Any], pd.DataFrame]
+        Predicted activity labels for each test ID. Can be:
+        1. 1D array/list of string labels (RECOMMENDED, e.g. `model.predict(X_test)` or `results["test_preds"]`).
+        2. 1D array/list of integer IDs (0 to 11).
+        3. 2D array or DataFrame of probabilities (N, 12).
+    save_name : str, default="submission.csv"
+        Output filename saved inside `reports/submissions/`.
+    class_order : Optional[Union[List[str], str]], default=None
+        Column order if passing raw 2D probabilities:
+        - None: defaults to canonical `ACTIVITY_CLASSES` (matches `results["test_probs"]`).
+        - 'alphabetical': sorted alphabetical order (matches raw `sklearn.model.predict_proba()`).
+        - list of strings: explicit custom class ordering (e.g., `model.classes_`).
+    verbose : bool, default=True
+        Whether to print submission summary and class frequency breakdown.
 
-    Returns:
-    --------
+    Returns
+    -------
     Path
-        Path to the verified submission file.
+        Path to the verified output submission file.
+
+    Raises
+    ------
+    ValueError
+        If test_df is missing 'id' or row counts do not match predictions.
+    AssertionError
+        If columns, row count (403), or null checks fail.
+
+    Examples
+    --------
+    >>> # Method 1: Using 5-Fold Cross-Validation test predictions
+    >>> sub_path = create_submission_file(test_df, rf_results["test_preds"], "sub_rf_cv.csv")
+    >>>
+    >>> # Method 2: Using full model .predict()
+    >>> test_preds = rf_model.predict(X_test)
+    >>> sub_path = create_submission_file(test_df, test_preds, "sub_rf_full.csv")
     """
     if "id" not in test_df.columns:
         raise ValueError("test_df must contain an 'id' column.")
@@ -240,10 +286,45 @@ def create_submission_file(
             f"Length mismatch: test_df has {len(test_df)} rows, but predictions has {len(predictions)} elements."
         )
 
-    preds_list = list(predictions)
-    # If predictions are numeric IDs, convert to string labels
-    if len(preds_list) > 0 and isinstance(preds_list[0], (int, np.integer)):
-        preds_list = [ID2LABEL[p] for p in preds_list]
+    # Determine class order for probability mapping if needed
+    if class_order is None:
+        target_classes = ACTIVITY_CLASSES
+    elif isinstance(class_order, str):
+        if class_order.lower() in ("alphabetical", "alpha", "sorted"):
+            target_classes = sorted(ACTIVITY_CLASSES)
+        elif class_order.lower() in ("canonical", "default"):
+            target_classes = ACTIVITY_CLASSES
+        else:
+            raise ValueError(f"Unknown class_order shortcut '{class_order}'. Use 'canonical', 'alphabetical', or pass a list.")
+    else:
+        target_classes = list(class_order)
+
+    # Normalize predictions input to a clean 1D list of string activity labels
+    if isinstance(predictions, pd.DataFrame):
+        # If columns match activity classes, take idxmax directly
+        matching_cols = [c for c in target_classes if c in predictions.columns]
+        if len(matching_cols) == len(target_classes):
+            preds_list = list(predictions[target_classes].idxmax(axis=1))
+        else:
+            preds_list = [target_classes[i] for i in np.argmax(predictions.values, axis=1)]
+    elif isinstance(predictions, np.ndarray) and predictions.ndim == 2:
+        # 2D probability matrix (N, 12) -> convert via argmax to class names
+        best_indices = np.argmax(predictions, axis=1)
+        preds_list = [target_classes[i] for i in best_indices]
+    else:
+        preds_list = list(predictions)
+
+    if len(preds_list) > 0:
+        first_elem = preds_list[0]
+        # Case: list of arrays/lists of probabilities
+        if isinstance(first_elem, (list, tuple, np.ndarray)):
+            preds_list = [target_classes[int(np.argmax(p))] for p in preds_list]
+        # Case: integer class indices (0 to 11)
+        elif isinstance(first_elem, (int, np.integer)):
+            preds_list = [ID2LABEL[int(p)] for p in preds_list]
+        # Case: string labels (verify they are strings)
+        else:
+            preds_list = [str(p) for p in preds_list]
 
     sub_df = pd.DataFrame({
         "id": test_df["id"].values,
