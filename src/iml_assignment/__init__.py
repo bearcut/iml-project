@@ -22,6 +22,7 @@ from iml_assignment.config import (
     SENTINEL_VALUE,
     LABEL2ID,
     ID2LABEL,
+    get_channel_unit,
 )
 
 from iml_assignment.data import (
@@ -51,6 +52,27 @@ from iml_assignment.visualization import (
     plot_signals,
 )
 
+from iml_assignment.features import (
+    extract_window_features,
+    extract_features_dataset,
+)
+
+from iml_assignment.models.baseline import (
+    get_baseline_model,
+)
+
+from iml_assignment.evaluate import (
+    compute_classification_metrics,
+    get_classification_report_df,
+    plot_confusion_matrix,
+    save_metrics,
+)
+
+from iml_assignment.train import (
+    cross_validate_model,
+    create_submission_file,
+)
+
 __all__ = [
     # Config
     "TRAIN_PATH",
@@ -72,6 +94,7 @@ __all__ = [
     "SENTINEL_VALUE",
     "LABEL2ID",
     "ID2LABEL",
+    "get_channel_unit",
     # Data
     "load_data",
     "get_sensor_columns",
@@ -95,4 +118,17 @@ __all__ = [
     "plot_imputation_comparison",
     "plot_scaling_comparison",
     "plot_signals",
+    # Features
+    "extract_window_features",
+    "extract_features_dataset",
+    # Models
+    "get_baseline_model",
+    # Evaluation
+    "compute_classification_metrics",
+    "get_classification_report_df",
+    "plot_confusion_matrix",
+    "save_metrics",
+    # Training & Cross Validation
+    "cross_validate_model",
+    "create_submission_file",
 ]

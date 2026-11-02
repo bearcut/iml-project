@@ -1,6 +1,13 @@
 """
 Configuration constants, paths, sensor groupings, and label definitions
-for the CSL2010 IML Project (Wearable Sensor HAR).
+for the CSL2010 IML Project (Wearable Sensor Human Activity Recognition).
+
+This module defines:
+- Directory paths for raw data, processed sets, figures, metrics, and submissions.
+- Signal specifications: 50 Hz sampling rate, 5.0s window duration (250 timesteps), 23 sensor channels.
+- Sensor channel taxonomy: chest, left ankle, right arm; accelerometers, gyroscopes, magnetometers, ECG.
+- Canonical activity classes (12 activities) and mappings (LABEL2ID, ID2LABEL).
+- Physical measurement units for each modality.
 """
 
 from pathlib import Path
@@ -8,17 +15,34 @@ from pathlib import Path
 # ─────────────────── File System Paths ───────────────────
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+"""Path: Absolute path to the root directory of the project repository."""
+
 DATASET_DIR = PROJECT_ROOT / "dataset"
+"""Path: Directory containing raw and augmented CSV datasets."""
 
 TRAIN_PATH = DATASET_DIR / "train.csv"
+"""Path: Primary training dataset (679 samples, 5752 columns, artificially corrupted)."""
+
 TEST_PATH = DATASET_DIR / "test.csv"
+"""Path: Kaggle test dataset (403 samples, 5751 columns, clean)."""
+
 TRAIN_AUGMENTED_PATH = DATASET_DIR / "train_augmented.csv"
+"""Path: Augmented training dataset (3,048 samples; original train + clean MHEALTH non-test subjects)."""
+
 FULL_PATH = DATASET_DIR / "full.csv"
+"""Path: Full reference MHEALTH dataset across all 10 subjects (2,555 samples)."""
 
 REPORTS_DIR = PROJECT_ROOT / "reports"
+"""Path: Directory for generated reports, figures, metrics, and submissions."""
+
 FIGURES_DIR = REPORTS_DIR / "figures"
+"""Path: Directory where publication-ready visualizations and charts are automatically saved."""
+
 METRICS_DIR = REPORTS_DIR / "metrics"
+"""Path: Directory where validation metrics and evaluation summaries are stored as JSON."""
+
 SUBMISSIONS_DIR = REPORTS_DIR / "submissions"
+"""Path: Directory where generated Kaggle submission CSV files are saved."""
 
 # Ensure output directories exist
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
@@ -28,13 +52,23 @@ SUBMISSIONS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─────────────────── Signal Specifications ───────────────────
 
-SAMPLING_RATE_HZ = 50           # Nominal sampling rate
-WINDOW_DURATION_SEC = 5.0       # 5-second non-overlapping windows
-WINDOW_SIZE = 250               # 250 timesteps per window (5.0s * 50Hz)
-NUM_CHANNELS = 23               # 23 sensor channels
-TOTAL_SIGNAL_FEATURES = 5750    # 250 * 23
+SAMPLING_RATE_HZ: int = 50
+"""int: Nominal sampling frequency in Hertz (50 samples per second)."""
 
-SENTINEL_VALUE = 9999.0         # Artificial corruption value injected in train.csv
+WINDOW_DURATION_SEC: float = 5.0
+"""float: Duration of each non-overlapping activity window in seconds."""
+
+WINDOW_SIZE: int = 250
+"""int: Number of discrete timesteps per sample window (5.0s * 50Hz = 250)."""
+
+NUM_CHANNELS: int = 23
+"""int: Number of physical sensor measurement channels recorded simultaneously."""
+
+TOTAL_SIGNAL_FEATURES: int = 5750
+"""int: Total number of raw numeric sensor features per window (250 timesteps * 23 channels)."""
+
+SENTINEL_VALUE: float = 9999.0
+"""float: Numerical sentinel value used to represent artificial sensor noise/dropout in train.csv."""
 
 
 # ─────────────────── 23 Sensor Channels ───────────────────
@@ -52,6 +86,7 @@ SENSOR_CHANNELS = [
     "arm_gyro_x", "arm_gyro_y", "arm_gyro_z",
     "arm_mag_x", "arm_mag_y", "arm_mag_z",
 ]
+"""list of str: Ordered names of the 23 sensor channels in canonical MHEALTH order."""
 
 # Grouped by body placement
 BODY_LOCATIONS = {
@@ -70,6 +105,7 @@ BODY_LOCATIONS = {
         "arm_mag_x", "arm_mag_y", "arm_mag_z"
     ],
 }
+"""dict: Mapping from anatomical sensor placement ('Chest', 'Ankle', 'Arm') to channel lists."""
 
 # Grouped by measurement modality
 SENSOR_MODALITIES = {
@@ -78,6 +114,7 @@ SENSOR_MODALITIES = {
     "Magnetometer":  [s for s in SENSOR_CHANNELS if "_mag_" in s],
     "ECG":           [s for s in SENSOR_CHANNELS if "_ecg_" in s],
 }
+"""dict: Mapping from sensor modality type to channel lists."""
 
 # Physical units per modality
 CHANNEL_UNITS = {
@@ -86,10 +123,30 @@ CHANNEL_UNITS = {
     "mag": "µT",
     "ecg": "mV",
 }
+"""dict: Physical measurement units for each sensor modality."""
 
 
 def get_channel_unit(channel_name: str) -> str:
-    """Return the physical unit for a given sensor channel name."""
+    """
+    Return the physical measurement unit for a given sensor channel name.
+
+    Parameters
+    ----------
+    channel_name : str
+        Name of the sensor channel (e.g., 'chest_acc_x', 'ankle_gyro_z', 'chest_ecg_1').
+
+    Returns
+    -------
+    str
+        Physical unit string (e.g., 'm/s²', 'deg/s', 'µT', 'mV'), or empty string if unknown.
+
+    Examples
+    --------
+    >>> get_channel_unit('chest_acc_x')
+    'm/s²'
+    >>> get_channel_unit('ankle_gyro_y')
+    'deg/s'
+    """
     for mod_key, unit in CHANNEL_UNITS.items():
         if f"_{mod_key}_" in channel_name or channel_name.endswith(f"_{mod_key}"):
             return unit
@@ -112,11 +169,16 @@ ACTIVITY_CLASSES = [
     "running",
     "jump_front_back",
 ]
+"""list of str: Canonical list of the 12 target human physical activity classes."""
 
 NUM_CLASSES = len(ACTIVITY_CLASSES)
+"""int: Total number of activity classes (12)."""
 
 LABEL2ID = {label: idx for idx, label in enumerate(ACTIVITY_CLASSES)}
+"""dict: Mapping from string activity name to integer class ID (0 to 11)."""
+
 ID2LABEL = {idx: label for idx, label in enumerate(ACTIVITY_CLASSES)}
+"""dict: Mapping from integer class ID (0 to 11) to string activity name."""
 
 # Activity categories for domain insights
 ACTIVITY_CATEGORIES = {
@@ -124,3 +186,4 @@ ACTIVITY_CATEGORIES = {
     "Cyclic Ambulation": ["walking", "climbing_stairs", "jogging", "running", "cycling"],
     "Repetitive Exercises": ["waist_bends", "arm_elevation", "knees_bending", "jump_front_back"],
 }
+"""dict: Grouping of the 12 activities into semantic behavioral categories."""
