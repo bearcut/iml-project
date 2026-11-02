@@ -33,7 +33,9 @@ from iml_assignment.data import (
     analyze_missing_and_sentinels,
     extract_sample_waveform,
     clean_sample_waveform,
+    clean_dataset,
     compute_channel_statistics,
+    ChannelScaler,
 )
 
 from iml_assignment.visualization import (
@@ -44,6 +46,9 @@ from iml_assignment.visualization import (
     plot_activity_comparison,
     plot_sensor_correlations,
     plot_frequency_spectrum,
+    plot_imputation_comparison,
+    plot_scaling_comparison,
+    plot_signals,
 )
 
 __all__ = [
@@ -76,7 +81,9 @@ __all__ = [
     "analyze_missing_and_sentinels",
     "extract_sample_waveform",
     "clean_sample_waveform",
+    "clean_dataset",
     "compute_channel_statistics",
+    "ChannelScaler",
     # Visualization
     "plot_class_distribution",
     "plot_missingness_by_channel",
@@ -85,4 +92,7 @@ __all__ = [
     "plot_activity_comparison",
     "plot_sensor_correlations",
     "plot_frequency_spectrum",
+    "plot_imputation_comparison",
+    "plot_scaling_comparison",
+    "plot_signals",
 ]
