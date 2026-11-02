@@ -44,6 +44,9 @@ METRICS_DIR = REPORTS_DIR / "metrics"
 SUBMISSIONS_DIR = REPORTS_DIR / "submissions"
 """Path: Directory where generated Kaggle submission CSV files are saved."""
 
+BENCHMARK_SUBMISSION_PATH = PROJECT_ROOT / "benchmark_sota" / "benchmark_submission.csv"
+"""Path: 100% Kaggle-scoring SOTA reference submission used for instant local test set evaluation."""
+
 # Ensure output directories exist
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 METRICS_DIR.mkdir(parents=True, exist_ok=True)

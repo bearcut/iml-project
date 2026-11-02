@@ -10,6 +10,7 @@ from iml_assignment.config import (
     FIGURES_DIR,
     METRICS_DIR,
     SUBMISSIONS_DIR,
+    BENCHMARK_SUBMISSION_PATH,
     SENSOR_CHANNELS,
     BODY_LOCATIONS,
     SENSOR_MODALITIES,
@@ -66,6 +67,9 @@ from iml_assignment.evaluate import (
     get_classification_report_df,
     plot_confusion_matrix,
     save_metrics,
+    evaluate_against_benchmark,
+    test_against_benchmark,
+    evaluate_test_predictions,
 )
 
 from iml_assignment.train import (
@@ -128,6 +132,9 @@ __all__ = [
     "get_classification_report_df",
     "plot_confusion_matrix",
     "save_metrics",
+    "evaluate_against_benchmark",
+    "test_against_benchmark",
+    "evaluate_test_predictions",
     # Training & Cross Validation
     "cross_validate_model",
     "create_submission_file",
