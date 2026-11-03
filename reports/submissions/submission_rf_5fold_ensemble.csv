@@ -1,7 +1,7 @@
 id,target
 TE000001,knees_bending
 TE000002,knees_bending
-TE000003,running
+TE000003,jogging
 TE000004,standing
 TE000005,jump_front_back
 TE000006,lying
@@ -32,7 +32,7 @@ TE000030,lying
 TE000031,running
 TE000032,knees_bending
 TE000033,cycling
-TE000034,running
+TE000034,jogging
 TE000035,sitting
 TE000036,waist_bends
 TE000037,jogging
@@ -70,7 +70,7 @@ TE000068,arm_elevation
 TE000069,sitting
 TE000070,standing
 TE000071,cycling
-TE000072,running
+TE000072,jogging
 TE000073,knees_bending
 TE000074,sitting
 TE000075,standing
@@ -80,7 +80,7 @@ TE000078,knees_bending
 TE000079,cycling
 TE000080,cycling
 TE000081,lying
-TE000082,running
+TE000082,jogging
 TE000083,knees_bending
 TE000084,knees_bending
 TE000085,lying
@@ -107,7 +107,7 @@ TE000105,arm_elevation
 TE000106,waist_bends
 TE000107,arm_elevation
 TE000108,jogging
-TE000109,running
+TE000109,jogging
 TE000110,waist_bends
 TE000111,waist_bends
 TE000112,waist_bends
@@ -189,7 +189,7 @@ TE000187,running
 TE000188,climbing_stairs
 TE000189,running
 TE000190,climbing_stairs
-TE000191,running
+TE000191,jogging
 TE000192,climbing_stairs
 TE000193,jogging
 TE000194,running
@@ -212,7 +212,7 @@ TE000210,cycling
 TE000211,waist_bends
 TE000212,sitting
 TE000213,lying
-TE000214,running
+TE000214,jogging
 TE000215,walking
 TE000216,climbing_stairs
 TE000217,lying

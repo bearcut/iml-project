@@ -56,6 +56,11 @@ from iml_assignment.visualization import (
 from iml_assignment.features import (
     extract_window_features,
     extract_features_dataset,
+    extract_jerk_features,
+    extract_flight_crest_features,
+    extract_spectral_band_ratios,
+    extract_arm_dynamics_features,
+    extract_all_engineered_features,
 )
 
 from iml_assignment.models.baseline import (
@@ -125,6 +130,11 @@ __all__ = [
     # Features
     "extract_window_features",
     "extract_features_dataset",
+    "extract_jerk_features",
+    "extract_flight_crest_features",
+    "extract_spectral_band_ratios",
+    "extract_arm_dynamics_features",
+    "extract_all_engineered_features",
     # Models
     "get_baseline_model",
     # Evaluation
