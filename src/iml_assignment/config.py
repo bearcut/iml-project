@@ -251,16 +251,16 @@ CNN_CONFIG: dict = {
 """dict: Dictionary gathering all 1D-CNN hyperparameters for easy logging and inspection."""
 
 
-# ─────────────────── Multi-Scale Inception-BiGRU Hyperparameters ───────────────────
+# ─────────────────── Multi-Scale Inception CNN + Class Gating Hyperparameters ───────────────────
 
 INCEPTION_DATASET_MODE: str = "train"
-"""str: Dataset mode for Inception training ('augmented' with 3,048 samples, or 'train' with 679 samples)."""
+"""str: Dataset mode for Inception training ('train' with 679 samples, or 'augmented' with 3,048 samples)."""
 
-INCEPTION_BATCH_SIZE: int = 64
-"""int: Mini-batch size for training Multi-Scale Inception-BiGRU."""
+INCEPTION_BATCH_SIZE: int = 32
+"""int: Mini-batch size for training Multi-Scale Inception CNN."""
 
-INCEPTION_EPOCHS: int = 25
-"""int: Number of training epochs (25 epochs with Cosine Annealing on augmented data)."""
+INCEPTION_EPOCHS: int = 35
+"""int: Number of training epochs (35 epochs with Cosine Annealing on train.csv)."""
 
 INCEPTION_LEARNING_RATE: float = 1.5e-3
 """float: Initial learning rate for AdamW optimizer."""
@@ -274,22 +274,19 @@ INCEPTION_NUM_FOLDS: int = 5
 INCEPTION_SEED: int = 42
 """int: Deterministic seed for reproducible fold splitting and weight initialization."""
 
-INCEPTION_CHANNELS: tuple = (64, 128, 256)
+INCEPTION_CHANNELS: tuple = (64, 128, 128)
 """tuple of int: Output channels for Inception stages 1, 2, and 3."""
 
-INCEPTION_GRU_HIDDEN: int = 128
-"""int: Hidden dimension for bidirectional GRU layer (output dimension is 2 * 128 = 256)."""
-
 INCEPTION_DENSE_UNITS: int = 128
-"""int: Hidden units in the post-attention MLP classification head."""
+"""int: Hidden dimension of the post-pooling dense layer in classification head."""
 
-INCEPTION_DROPOUT: float = 0.3
-"""float: Dropout rate after attention pooling."""
+INCEPTION_DROPOUT: float = 0.2
+"""float: Dropout rate after dual pooling before dense layer."""
 
-INCEPTION_DROPOUT_HEAD: float = 0.2
+INCEPTION_DROPOUT_HEAD: float = 0.1
 """float: Dropout rate before the final 12-class linear output layer."""
 
-INCEPTION_LABEL_SMOOTHING: float = 0.05
+INCEPTION_LABEL_SMOOTHING: float = 0.02
 """float: Label smoothing factor for CrossEntropyLoss to prevent overconfident logits."""
 
 INCEPTION_GRAD_CLIP: float = 2.0
@@ -297,6 +294,15 @@ INCEPTION_GRAD_CLIP: float = 2.0
 
 INCEPTION_ETA_MIN: float = 1e-5
 """float: Minimum learning rate floor for CosineAnnealingLR scheduler."""
+
+INCEPTION_GATE_INIT: float = 0.8
+"""float: Initial probability gating value for physical prior weights."""
+
+INCEPTION_RF_ESTIMATORS: int = 150
+"""int: Number of trees for stratified prior estimation."""
+
+INCEPTION_RF_MAX_DEPTH: int = 9
+"""int: Maximum tree depth for stratified prior estimation."""
 
 INCEPTION_CONFIG: dict = {
     "dataset_mode": INCEPTION_DATASET_MODE,
@@ -307,12 +313,14 @@ INCEPTION_CONFIG: dict = {
     "num_folds": INCEPTION_NUM_FOLDS,
     "seed": INCEPTION_SEED,
     "inception_channels": INCEPTION_CHANNELS,
-    "gru_hidden": INCEPTION_GRU_HIDDEN,
     "dense_units": INCEPTION_DENSE_UNITS,
     "dropout": INCEPTION_DROPOUT,
     "dropout_head": INCEPTION_DROPOUT_HEAD,
     "label_smoothing": INCEPTION_LABEL_SMOOTHING,
     "grad_clip": INCEPTION_GRAD_CLIP,
     "eta_min": INCEPTION_ETA_MIN,
+    "gate_init": INCEPTION_GATE_INIT,
+    "rf_estimators": INCEPTION_RF_ESTIMATORS,
+    "rf_max_depth": INCEPTION_RF_MAX_DEPTH,
 }
 """dict: Dictionary gathering all Inception model hyperparameters for easy logging and inspection."""
