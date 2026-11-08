@@ -33,6 +33,7 @@ def compute_classification_metrics(
     y_pred: Union[pd.Series, np.ndarray, List],
     y_prob: Optional[np.ndarray] = None,
     class_names: Optional[List[str]] = None,
+    classes: Optional[List[str]] = None,
 ) -> Dict[str, Union[float, Dict]]:
     """
     Compute comprehensive classification metrics for multiclass predictions.
@@ -73,7 +74,7 @@ def compute_classification_metrics(
     >>> metrics = compute_classification_metrics(y_val, y_pred)
     >>> print(f"Val Accuracy: {metrics['accuracy_pct']}% | Macro F1: {metrics['macro_f1']}")
     """
-    labels = class_names if class_names is not None else ACTIVITY_CLASSES
+    labels = class_names if class_names is not None else (classes if classes is not None else ACTIVITY_CLASSES)
 
     acc = float(accuracy_score(y_true, y_pred))
     macro_f1 = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
@@ -139,7 +140,7 @@ def get_classification_report_df(
     >>> report_df = get_classification_report_df(y_val, y_pred)
     >>> display(report_df)
     """
-    labels = class_names if class_names is not None else ACTIVITY_CLASSES
+    labels = class_names if class_names is not None else (classes if classes is not None else ACTIVITY_CLASSES)
     report_dict = classification_report(
         y_true, y_pred, labels=labels, output_dict=True, zero_division=0
     )
@@ -151,6 +152,7 @@ def plot_confusion_matrix(
     y_true: Union[pd.Series, np.ndarray, List],
     y_pred: Union[pd.Series, np.ndarray, List],
     class_names: Optional[List[str]] = None,
+    classes: Optional[List[str]] = None,
     normalize: bool = True,
     title: Optional[str] = None,
     save_name: Optional[str] = None,
@@ -191,7 +193,7 @@ def plot_confusion_matrix(
     >>> fig, ax = plot_confusion_matrix(y_true, oof_preds, save_name="fig_cm.png")
     >>> plt.show()
     """
-    labels = class_names if class_names is not None else ACTIVITY_CLASSES
+    labels = class_names if class_names is not None else (classes if classes is not None else ACTIVITY_CLASSES)
 
     # Compute raw counts and normalized matrices
     cm_counts = confusion_matrix(y_true, y_pred, labels=labels)

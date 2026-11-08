@@ -190,3 +190,62 @@ ACTIVITY_CATEGORIES = {
     "Repetitive Exercises": ["waist_bends", "arm_elevation", "knees_bending", "jump_front_back"],
 }
 """dict: Grouping of the 12 activities into semantic behavioral categories."""
+
+
+# ─────────────────── Deep Learning Hyperparameters (1D-CNN) ───────────────────
+
+CNN_BATCH_SIZE: int = 64
+"""int: Mini-batch size for training and evaluating 1D-CNN."""
+
+CNN_EPOCHS: int = 40
+"""int: Number of complete training passes over the training dataset."""
+
+CNN_LEARNING_RATE: float = 1e-3
+"""float: Initial learning rate for the AdamW optimizer."""
+
+CNN_WEIGHT_DECAY: float = 1e-4
+"""float: L2 regularization weight decay factor for AdamW."""
+
+CNN_NUM_FOLDS: int = 5
+"""int: Number of stratified cross-validation folds."""
+
+CNN_SEED: int = 42
+"""int: Deterministic seed for reproducible fold splitting and weight initialization."""
+
+CNN_KERNEL_SIZE: int = 5
+"""int: Temporal convolution filter width across timesteps (5 timesteps = 100 ms at 50 Hz)."""
+
+CNN_CONV_CHANNELS: tuple = (64, 128, 256)
+"""tuple of int: Number of feature maps / filters in conv blocks 1, 2, and 3."""
+
+CNN_DENSE_UNITS: int = 128
+"""int: Hidden dimension of the post-pooling dense layer in classification head."""
+
+CNN_DROPOUT: float = 0.3
+"""float: Dropout rate after global pooling to prevent temporal co-adaptation."""
+
+CNN_DROPOUT_HEAD: float = 0.2
+"""float: Dropout rate inside classification head before output logits."""
+
+CNN_GRAD_CLIP: float = 2.0
+"""float: Maximum gradient L2-norm threshold for gradient clipping (0 to disable)."""
+
+CNN_ETA_MIN: float = 1e-5
+"""float: Minimum learning rate floor for CosineAnnealingLR scheduler."""
+
+CNN_CONFIG: dict = {
+    "batch_size": CNN_BATCH_SIZE,
+    "epochs": CNN_EPOCHS,
+    "learning_rate": CNN_LEARNING_RATE,
+    "weight_decay": CNN_WEIGHT_DECAY,
+    "num_folds": CNN_NUM_FOLDS,
+    "seed": CNN_SEED,
+    "kernel_size": CNN_KERNEL_SIZE,
+    "conv_channels": CNN_CONV_CHANNELS,
+    "dense_units": CNN_DENSE_UNITS,
+    "dropout": CNN_DROPOUT,
+    "dropout_head": CNN_DROPOUT_HEAD,
+    "grad_clip": CNN_GRAD_CLIP,
+    "eta_min": CNN_ETA_MIN,
+}
+"""dict: Dictionary gathering all 1D-CNN hyperparameters for easy logging and inspection."""
