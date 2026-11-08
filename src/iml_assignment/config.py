@@ -197,7 +197,7 @@ ACTIVITY_CATEGORIES = {
 CNN_BATCH_SIZE: int = 64
 """int: Mini-batch size for training and evaluating 1D-CNN."""
 
-CNN_EPOCHS: int = 40
+CNN_EPOCHS: int = 12
 """int: Number of complete training passes over the training dataset."""
 
 CNN_LEARNING_RATE: float = 1e-3
@@ -249,3 +249,70 @@ CNN_CONFIG: dict = {
     "eta_min": CNN_ETA_MIN,
 }
 """dict: Dictionary gathering all 1D-CNN hyperparameters for easy logging and inspection."""
+
+
+# ─────────────────── Multi-Scale Inception-BiGRU Hyperparameters ───────────────────
+
+INCEPTION_DATASET_MODE: str = "train"
+"""str: Dataset mode for Inception training ('augmented' with 3,048 samples, or 'train' with 679 samples)."""
+
+INCEPTION_BATCH_SIZE: int = 64
+"""int: Mini-batch size for training Multi-Scale Inception-BiGRU."""
+
+INCEPTION_EPOCHS: int = 25
+"""int: Number of training epochs (25 epochs with Cosine Annealing on augmented data)."""
+
+INCEPTION_LEARNING_RATE: float = 1.5e-3
+"""float: Initial learning rate for AdamW optimizer."""
+
+INCEPTION_WEIGHT_DECAY: float = 1e-3
+"""float: L2 regularization factor for AdamW."""
+
+INCEPTION_NUM_FOLDS: int = 5
+"""int: Number of stratified cross-validation folds."""
+
+INCEPTION_SEED: int = 42
+"""int: Deterministic seed for reproducible fold splitting and weight initialization."""
+
+INCEPTION_CHANNELS: tuple = (64, 128, 256)
+"""tuple of int: Output channels for Inception stages 1, 2, and 3."""
+
+INCEPTION_GRU_HIDDEN: int = 128
+"""int: Hidden dimension for bidirectional GRU layer (output dimension is 2 * 128 = 256)."""
+
+INCEPTION_DENSE_UNITS: int = 128
+"""int: Hidden units in the post-attention MLP classification head."""
+
+INCEPTION_DROPOUT: float = 0.3
+"""float: Dropout rate after attention pooling."""
+
+INCEPTION_DROPOUT_HEAD: float = 0.2
+"""float: Dropout rate before the final 12-class linear output layer."""
+
+INCEPTION_LABEL_SMOOTHING: float = 0.05
+"""float: Label smoothing factor for CrossEntropyLoss to prevent overconfident logits."""
+
+INCEPTION_GRAD_CLIP: float = 2.0
+"""float: Maximum gradient L2-norm threshold for gradient clipping."""
+
+INCEPTION_ETA_MIN: float = 1e-5
+"""float: Minimum learning rate floor for CosineAnnealingLR scheduler."""
+
+INCEPTION_CONFIG: dict = {
+    "dataset_mode": INCEPTION_DATASET_MODE,
+    "batch_size": INCEPTION_BATCH_SIZE,
+    "epochs": INCEPTION_EPOCHS,
+    "learning_rate": INCEPTION_LEARNING_RATE,
+    "weight_decay": INCEPTION_WEIGHT_DECAY,
+    "num_folds": INCEPTION_NUM_FOLDS,
+    "seed": INCEPTION_SEED,
+    "inception_channels": INCEPTION_CHANNELS,
+    "gru_hidden": INCEPTION_GRU_HIDDEN,
+    "dense_units": INCEPTION_DENSE_UNITS,
+    "dropout": INCEPTION_DROPOUT,
+    "dropout_head": INCEPTION_DROPOUT_HEAD,
+    "label_smoothing": INCEPTION_LABEL_SMOOTHING,
+    "grad_clip": INCEPTION_GRAD_CLIP,
+    "eta_min": INCEPTION_ETA_MIN,
+}
+"""dict: Dictionary gathering all Inception model hyperparameters for easy logging and inspection."""
